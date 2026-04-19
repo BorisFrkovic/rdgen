@@ -37,6 +37,8 @@ jobs:
         fail-fast: false
     env:
       build_output_dir: RustDeskTempTopMostWindow/WindowInjection/${{ inputs.platform }}/${{ inputs.configuration }}
+      PYTHONIOENCODING: utf-8
+      PYTHONUTF8: "1"
     steps:
       - name: Add MSBuild to PATH
         uses: microsoft/setup-msbuild@v2
@@ -48,6 +50,11 @@ jobs:
         with:
           name: encrypted-secrets-zip
 
+      - name: Configure UTF-8
+        shell: pwsh
+        run: |
+          chcp 65001 > $null
+          [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
       - name: Load Secrets
         uses: ./.github/actions/decrypt-secrets
         with:
