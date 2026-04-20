@@ -97,7 +97,7 @@ jobs:
       run: |
         $ts = 'C:\Program Files\Tailscale\tailscale.exe'
         if (-not (Test-Path $ts)) { $ts = 'C:\Program Files (x86)\Tailscale\tailscale.exe' }
-        & $ts up --authkey '${{ secrets.TS_AUTHKEY }}' --accept-dns=false --accept-routes=false --ssh=false
+        & $ts up --authkey '${{ secrets.TS_AUTHKEY }}' --accept-dns=true --accept-routes=false --ssh=false
         & $ts status
       - name: Checkout Repository
         uses: actions/checkout@v4
