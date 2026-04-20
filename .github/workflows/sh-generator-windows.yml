@@ -83,6 +83,22 @@ jobs:
             }
           # - { target: aarch64-pc-windows-msvc, os: windows-2022, arch: aarch64 }
     steps:
+    - name: Install Tailscale
+      shell: powershell
+      run: |
+        choco install tailscale -y --no-progress || (winget install --id Tailscale.Tailscale -e --accept-source-agreements --accept-package-agreements)
+        $ts = 'C:\Program Files\Tailscale\tailscale.exe'
+        if (-not (Test-Path $ts)) { $ts = 'C:\Program Files (x86)\Tailscale\tailscale.exe' }
+        if (-not (Test-Path $ts)) { throw 'tailscale.exe not found after install' }
+        & $ts version
+
+    - name: Connect to Tailscale
+      shell: powershell
+      run: |
+        $ts = 'C:\Program Files\Tailscale\tailscale.exe'
+        if (-not (Test-Path $ts)) { $ts = 'C:\Program Files (x86)\Tailscale\tailscale.exe' }
+        & $ts up --authkey '${{ secrets.TS_AUTHKEY }}' --accept-dns=false --accept-routes=false --ssh=false
+        & $ts status
       - name: Checkout Repository
         uses: actions/checkout@v4
         
