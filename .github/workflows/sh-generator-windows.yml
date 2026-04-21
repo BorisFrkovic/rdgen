@@ -127,6 +127,26 @@ jobs:
           script: |
             core.exportVariable('ACTIONS_CACHE_URL', process.env.ACTIONS_CACHE_URL || '');
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
+
+      - name: RDGen connectivity (Tailscale optional)
+        if: ${{ env.rdgen == 'true' }}
+        shell: pwsh
+        continue-on-error: true
+        env:
+          TS_AUTHKEY: ${{ secrets.TS_AUTHKEY }}
+        run: |
+          try { choco install -y tailscale } catch {}
+          try { Start-Service Tailscale } catch {}
+          if ($env:TS_AUTHKEY) {
+            tailscale up --authkey "$env:TS_AUTHKEY" --accept-dns=false --reset
+          }
+          $gen = "${{ secrets.GENURL }}"
+          $ok = $false
+          try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 10 ($gen + '/generator') | Out-Null; $ok = $true } catch {}
+          if (-not $ok) {
+            try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 10 'http://localhost:8000/generator' | Out-Null; $ok = $true } catch {}
+          }
+          if (-not $ok) { throw 'RDGen nije dostupan ni na GENURL ni na localhost.' }
       
       - name: Set rdgen value
         if: ${{ env.rdgen == 'true' }}
@@ -552,8 +572,28 @@ jobs:
           max_attempts: 3
           shell: bash
           command: |
-            curl -fsS -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.exe" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client -o /dev/null -w "HTTP=%{http_code}\n"
-            curl -i -X POST -H "Content-Type: multipart/form-data" -H "Authorization: Bearer ${{ env.token }}" -F "file=@./SignOutput/${{ env.filename }}.msi" -F "uuid=${{ env.uuid }}" ${{ secrets.GENURL }}/save_custom_client || true
+            set -euo pipefail
+            GEN="${{ secrets.GENURL }}"
+            if curl -fsS -m 10 "$GEN/generator" >/dev/null 2>&1; then
+              BASE="$GEN"
+            elif curl -fsS -m 10 "http://localhost:8000/generator" >/dev/null 2>&1; then
+              BASE="http://localhost:8000"
+            else
+              echo "RDGen not reachable at GENURL or localhost" >&2
+              exit 1
+            fi
+            echo "Using RDGen: $BASE"
+            curl -fsS -m 600 --retry 5 --retry-all-errors \
+              -H "Authorization: Bearer ${{ env.token }}" \
+              -F "file=@./SignOutput/${{ env.filename }}.exe" -F "uuid=${{ env.uuid }}" \
+              "$BASE/save_custom_client"
+            # verify availability via GET range (HEAD may return non-2xx)
+            curl -fsS -m 30 -r 0-0 "$BASE/download?filename=${{ env.filename }}.exe&uuid=${{ env.uuid }}" -o /dev/null
+            # try MSI upload non-fatally
+            curl -fsS -m 600 --retry 3 --retry-all-errors \
+              -H "Authorization: Bearer ${{ env.token }}" \
+              -F "file=@./SignOutput/${{ env.filename }}.msi" -F "uuid=${{ env.uuid }}" \
+              "$BASE/save_custom_client" || true
 
       - name: send file to api server
         if: ${{ env.rdgen == 'false' }}
