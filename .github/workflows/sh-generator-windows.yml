@@ -129,7 +129,7 @@ jobs:
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
 
       - name: RDGen connectivity (Tailscale optional)
-        if: ${{ env.rdgen == 'true' }}
+        if: ${{ secrets.GENURL != '' }}
         shell: pwsh
         continue-on-error: true
         env:
@@ -149,12 +149,12 @@ jobs:
           if (-not $ok) { throw 'RDGen nije dostupan ni na GENURL ni na localhost.' }
       
       - name: Set rdgen value
-        if: ${{ env.rdgen == 'true' }}
+        if: ${{ secrets.GENURL != '' }}
         run: |
           echo "STATUS_URL=${{ secrets.GENURL }}/updategh" >> $env:GITHUB_ENV
 
       - name: Set rdgen value
-        if: ${{ env.rdgen == 'false' }}
+        if: ${{ secrets.GENURL == '' }}
         run: |
           echo "STATUS_URL=${{ env.apiServer }}/api/updategh" >> $env:GITHUB_ENV
 
@@ -565,7 +565,7 @@ jobs:
           mv ./SignOutput/rustdesk.msi "./SignOutput/${{ env.filename }}.msi" || echo "rustdesk"
 
       - name: send file to rdgen server
-        if: ${{ env.rdgen == 'true' }}
+        if: ${{ secrets.GENURL != '' }}
         uses: nick-fields/retry@v3
         with:
           timeout_minutes: 1
