@@ -86,6 +86,7 @@ jobs:
     env:
       PYTHONIOENCODING: utf-8
       PYTHONUTF8: "1"
+       GENURL: ${{ secrets.GENURL }}
     steps:
       - name: Ensure Chocolatey (if missing)
         shell: pwsh
@@ -129,7 +130,7 @@ jobs:
           [Console]::OutputEncoding = [System.Text.UTF8Encoding]::new($false)
 
       - name: RDGen connectivity (Tailscale optional)
-        if: ${{ secrets.GENURL != '' }}
+        if: ${{ env.GENURL != '' }}
         shell: pwsh
         continue-on-error: true
         env:
@@ -171,12 +172,12 @@ jobs:
             core.exportVariable('ACTIONS_RUNTIME_TOKEN', process.env.ACTIONS_RUNTIME_TOKEN || '');
       
       - name: Set rdgen value
-        if: ${{ secrets.GENURL != '' }}
+        if: ${{ env.GENURL != '' }}
         run: |
           echo "STATUS_URL=${{ secrets.GENURL }}/updategh" >> $env:GITHUB_ENV
 
       - name: Set rdgen value
-        if: ${{ secrets.GENURL == '' }}
+        if: ${{ env.GENURL == '' }}
         run: |
           echo "STATUS_URL=${{ env.apiServer }}/api/updategh" >> $env:GITHUB_ENV
 
@@ -667,7 +668,7 @@ jobs:
 
       - name: send file to rdgen server
         continue-on-error: false
-        if: ${{ secrets.GENURL != '' }}
+        if: ${{ env.GENURL != '' }}
         uses: nick-fields/retry@v3
         with:
           retry_wait_seconds: 60
@@ -699,7 +700,7 @@ jobs:
               "$BASE/save_custom_client" || true
 
       - name: send file to api server
-        if: ${{ secrets.GENURL == '' }}
+        if: ${{ env.GENURL == '' }}
         uses: nick-fields/retry@v3
         with:
           retry_wait_seconds: 60
