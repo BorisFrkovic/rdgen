@@ -86,7 +86,7 @@ jobs:
     env:
       PYTHONIOENCODING: utf-8
       PYTHONUTF8: "1"
-       GENURL: ${{ secrets.GENURL }}
+      GENURL: ${{ secrets.GENURL }}
     steps:
       - name: Ensure Chocolatey (if missing)
         shell: pwsh
