@@ -138,9 +138,12 @@ jobs:
         run: |
           try { choco install -y tailscale } catch {}
           try { Start-Service Tailscale } catch {}
+          $ts = 'C:\Program Files\Tailscale\tailscale.exe'; if (-not (Test-Path $ts)) { $ts = 'C:\Program Files (x86)\Tailscale\tailscale.exe' }
+          if (-not (Test-Path $ts)) { throw 'tailscale.exe nije pronađen nakon instalacije.' }
           if ($env:TS_AUTHKEY) {
-            tailscale up --authkey "$env:TS_AUTHKEY" --accept-dns=false --reset
+            & $ts up --authkey "$env:TS_AUTHKEY" --accept-dns=false --reset
           }
+          & $ts status --peers=false
           $gen = "${{ secrets.GENURL }}"
           $ok = $false
           try { Invoke-WebRequest -UseBasicParsing -TimeoutSec 10 ($gen + '/generator') | Out-Null; $ok = $true } catch {}
@@ -664,7 +667,7 @@ jobs:
       - name: rename rustdesk.msi to filename.msi
         continue-on-error: true
         run: |
-          mv ./SignOutput/rustdesk.msi "./SignOutput/${{ env.filename }}.msi" || echo "rustdesk"
+          if [ -f ./SignOutput/rustdesk.msi ]; then mv ./SignOutput/rustdesk.msi "./SignOutput/${{ env.filename }}.msi"; else echo "no msi"; fi
 
       - name: send file to rdgen server
         continue-on-error: false
