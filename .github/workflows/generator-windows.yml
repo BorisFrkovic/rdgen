@@ -626,6 +626,18 @@ jobs:
           cp "rustdesk/${{ env.appname }}.exe" "rustdesk/${myappname}.exe" -ErrorAction SilentlyContinue
           pushd ./res/msi
           python preprocess.py --app-name "$myappname" --arp -d ../../rustdesk
+          # Diagnostics: print WiX files after preprocess to see inserted variables
+          Write-Host "=== Includes.wxi ==="
+          Get-Content "Package/Includes.wxi"
+          Write-Host "=== Package.wxs (first 12 lines) ==="
+          Get-Content "Package/Package.wxs" -Head 12
+          Write-Host "=== Package.en-us.wxl (first 20 lines) ==="
+          Get-Content "Package/Language/Package.en-us.wxl" -Head 20
+          Write-Host "=== Regs.wxs (first 20 lines) ==="
+          Get-Content "Package/Components/Regs.wxs" -Head 20
+          # Patch WiX files to use CP 1250 so Croatian characters work
+          (Get-Content "Package/Package.wxs" -Raw) -replace '<Package ', '<Package Codepage="1250" ' | Set-Content "Package/Package.wxs" -NoNewline
+          (Get-Content "Package/Language/Package.en-us.wxl" -Raw) -replace 'Codepage="1252"', 'Codepage="1250"' -replace 'Value="1252"', 'Value="1250"' | Set-Content "Package/Language/Package.en-us.wxl" -NoNewline
           nuget restore msi.sln
           msbuild msi.sln -p:Configuration=Release -p:Platform=x64 /p:TargetVersion=Windows10
           cp ./Package/bin/x64/Release/en-us/Package.msi ../../SignOutput/rustdesk-latest.msi
