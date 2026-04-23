@@ -661,13 +661,23 @@ jobs:
           Remove-Item ./SignOutput/signed_files.zip
 
       - name: rename rustdesk.exe to filename.exe
+        shell: pwsh
         run: |
-          mv ./SignOutput/rustdesk.exe "./SignOutput/${{ env.filename }}.exe" || echo "rustdesk"
+          if (Test-Path './SignOutput/rustdesk.exe') {
+              Move-Item './SignOutput/rustdesk.exe' "./SignOutput/${{ env.filename }}.exe"
+          } else {
+              Write-Host 'no exe'
+          }
 
       - name: rename rustdesk.msi to filename.msi
+        shell: pwsh
         continue-on-error: true
         run: |
-          if [ -f ./SignOutput/rustdesk.msi ]; then mv ./SignOutput/rustdesk.msi "./SignOutput/${{ env.filename }}.msi"; else echo "no msi"; fi
+          if (Test-Path './SignOutput/rustdesk.msi') {
+              Move-Item './SignOutput/rustdesk.msi' "./SignOutput/${{ env.filename }}.msi"
+          } else {
+              Write-Host 'no msi'
+          }
 
       - name: send file to rdgen server
         continue-on-error: false
