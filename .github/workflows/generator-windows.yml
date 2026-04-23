@@ -141,7 +141,7 @@ jobs:
           $ts = 'C:\Program Files\Tailscale\tailscale.exe'; if (-not (Test-Path $ts)) { $ts = 'C:\Program Files (x86)\Tailscale\tailscale.exe' }
           if (-not (Test-Path $ts)) { throw 'tailscale.exe nije pronađen nakon instalacije.' }
           if ($env:TS_AUTHKEY) {
-            & $ts up --authkey "$env:TS_AUTHKEY" --accept-dns=false --reset
+            & $ts up --authkey "$env:TS_AUTHKEY" --reset
           }
           & $ts status --peers=false
           $gen = "${{ secrets.GENURL }}"
